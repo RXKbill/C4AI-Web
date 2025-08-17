@@ -1,0 +1,2431 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <title>时序预测推理示例 - 驭能能源管理系统</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="时序预测推理示例" name="description">
+    <meta content="Themesbrand" name="author">
+
+    <!-- plugin css -->
+    <link href="static/css/jquery-jvectormap-1.2.2.css" rel="stylesheet" type="text/css">
+
+    <!-- preloader css -->
+    <link rel="stylesheet" href="static/css/preloader.min.css" type="text/css">
+
+    <!-- Bootstrap Css -->
+    <link href="static/css/bootstrap.min.css" id="bootstrap-style" rel="stylesheet" type="text/css">
+    <!-- Icons Css -->
+    <link href="static/css/icons.min.css" rel="stylesheet" type="text/css">
+    <!-- App Css-->
+    <link href="static/css/app.min.css" id="app-style" rel="stylesheet" type="text/css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js Zoom Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <!-- Papa Parse for CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+    <style>
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            background-color: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+        }
+
+        .upload-area.dragover {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+        }
+
+        .upload-text {
+            color: #495057;
+            font-weight: 500;
+        }
+
+        .sample-dataset-item {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .sample-dataset-item:hover {
+            background-color: #e3f2fd !important;
+            border-color: #007bff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+        }
+
+        .sample-dataset-item.selected {
+            background-color: #007bff !important;
+            color: white !important;
+            border-color: #0056b3;
+        }
+
+        .sample-dataset-item.selected small {
+            color: #e3f2fd !important;
+        }
+
+        .step-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding: 20px 0;
+        }
+
+        .step-navigation .btn {
+            min-width: 120px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .section-header i {
+            font-size: 1.2em;
+            margin-right: 10px;
+        }
+
+        .section-header h5 {
+            margin: 0;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .variable-info-card {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            border: 2px solid #34495e;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            color: white;
+        }
+
+        .variable-info-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c);
+        }
+
+        /* 变量信息内部样式 */
+        .info-section-header {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border-radius: 8px;
+            border-left: 4px solid #1abc9c;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+        }
+
+        .info-section-header i {
+            font-size: 1.1em;
+            margin-right: 8px;
+            color: #ecf0f1;
+        }
+
+        .info-section-header h6 {
+            margin: 0;
+            font-weight: 600;
+            color: white;
+            font-size: 0.95em;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .info-item {
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            border: 1px solid #4a5f7a;
+            border-radius: 8px;
+            padding: 12px 15px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #3498db, #1abc9c);
+        }
+
+        .info-item:hover {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+            border-color: #3498db;
+        }
+
+        .info-label {
+            font-size: 0.9em;
+            color: #bdc3c7;
+            font-weight: 500;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .info-value {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #ecf0f1;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .info-value.variable-name {
+            color: #e74c3c;
+            font-size: 1.3em;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
+        }
+
+        /* 统计信息块的增强样式 */
+        .info-item.stat-item {
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            border-left: 4px solid #3498db;
+            transition: all 0.3s ease;
+        }
+
+        .info-item.stat-item:hover {
+            transform: translateX(5px);
+            border-left-color: #1abc9c;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        /* 为不同类型的统计信息添加颜色标识 */
+        .info-item.min-stat {
+            border-left-color: #2196f3;
+        }
+
+        .info-item.max-stat {
+            border-left-color: #f44336;
+        }
+
+        .info-item.range-stat {
+            border-left-color: #ff9800;
+        }
+
+        .info-item.mean-stat {
+            border-left-color: #4caf50;
+        }
+
+        .info-item.median-stat {
+            border-left-color: #9c27b0;
+        }
+
+        .info-item.std-stat {
+            border-left-color: #607d8b;
+        }
+
+        .info-item.q1-stat {
+            border-left-color: #3f51b5;
+        }
+
+        .info-item.q2-stat {
+            border-left-color: #4caf50;
+        }
+
+        .info-item.q3-stat {
+            border-left-color: #ff9800;
+        }
+
+        /* 统计信息容器的样式 */
+        .stats-container {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 统计信息标签的增强样式 */
+        .info-label.stat-label {
+            font-size: 0.85em;
+            color: #95a5a6;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 8px;
+        }
+
+        /* 统计信息数值的增强样式 */
+        .info-value.stat-value {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #ecf0f1;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 统计信息块的悬停效果增强 */
+        .info-item.stat-item:hover .info-value.stat-value {
+            color: #ffffff;
+            text-shadow: 0 2px 6px rgba(255, 255, 255, 0.2);
+        }
+
+        /* 为统计信息块添加渐变边框效果 */
+        .info-item.stat-item::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .info-item.stat-item:hover::after {
+            opacity: 1;
+        }
+
+        /* 统计卡片样式 */
+        .stat-card {
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            border-radius: 10px;
+            padding: 15px 18px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border: 2px solid #4a5f7a;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            border-color: #3498db;
+        }
+
+        .stat-card.min-card::before {
+            background: linear-gradient(90deg, #2196f3, #21cbf3);
+        }
+
+        .stat-card.max-card::before {
+            background: linear-gradient(90deg, #f44336, #ff5722);
+        }
+
+        .stat-card.range-card::before {
+            background: linear-gradient(90deg, #ff9800, #ffc107);
+        }
+
+        .stat-card.mean-card::before {
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+        }
+
+        .stat-card.median-card::before {
+            background: linear-gradient(90deg, #9c27b0, #e91e63);
+        }
+
+        .stat-card.std-card::before {
+            background: linear-gradient(90deg, #607d8b, #795548);
+        }
+
+        .stat-card.q1-card::before {
+            background: linear-gradient(90deg, #3f51b5, #2196f3);
+        }
+
+        .stat-card.q2-card::before {
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+        }
+
+        .stat-card.q3-card::before {
+            background: linear-gradient(90deg, #ff9800, #ffc107);
+        }
+
+        .stat-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+            color: white;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .min-card .stat-icon {
+            background: linear-gradient(135deg, #2196f3, #21cbf3);
+        }
+
+        .max-card .stat-icon {
+            background: linear-gradient(135deg, #f44336, #ff5722);
+        }
+
+        .range-card .stat-icon {
+            background: linear-gradient(135deg, #ff9800, #ffc107);
+        }
+
+        .mean-card .stat-icon {
+            background: linear-gradient(135deg, #4caf50, #8bc34a);
+        }
+
+        .median-card .stat-icon {
+            background: linear-gradient(135deg, #9c27b0, #e91e63);
+        }
+
+        .std-card .stat-icon {
+            background: linear-gradient(135deg, #607d8b, #795548);
+        }
+
+        .q1-card .stat-icon {
+            background: linear-gradient(135deg, #3f51b5, #2196f3);
+        }
+
+        .q2-card .stat-icon {
+            background: linear-gradient(135deg, #4caf50, #8bc34a);
+        }
+
+        .q3-card .stat-icon {
+            background: linear-gradient(135deg, #ff9800, #ffc107);
+        }
+
+        .stat-content {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #bdc3c7;
+            font-weight: 500;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #ecf0f1;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+        }
+
+        .prediction-controls {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            color: white;
+        }
+
+        .prediction-controls label {
+            color: white;
+            font-weight: 500;
+        }
+
+        .prediction-controls input {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: none;
+            color: #333;
+        }
+
+        .prediction-controls input:focus {
+            background-color: white;
+            box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25);
+        }
+
+        .data-table-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+        }
+
+        .prediction-controls {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            margin: 0 5px;
+            position: relative;
+        }
+
+        .step.active {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .step.completed {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .step-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #dee2e6;
+            color: #6c757d;
+            line-height: 30px;
+            margin-bottom: 5px;
+        }
+
+        .step.active .step-number {
+            background-color: white;
+            color: #007bff;
+        }
+
+                 .step.completed .step-number {
+             background-color: white;
+             color: #28a745;
+         }
+
+         /* 历史数据长度警告样式 */
+         #historyLengthWarning {
+             border-left: 4px solid #ffc107;
+             background-color: rgba(255, 193, 7, 0.1);
+             border-color: #ffc107;
+             color: #856404;
+             animation: fadeIn 0.3s ease-in;
+         }
+
+         #historyLengthWarning .fas {
+             color: #ffc107;
+         }
+
+         @keyframes fadeIn {
+             from { opacity: 0; transform: translateY(-10px); }
+             to { opacity: 1; transform: translateY(0); }
+         }
+
+         /* 禁用按钮样式 */
+         .btn:disabled {
+             opacity: 0.6;
+             cursor: not-allowed;
+         }
+    </style>
+</head>
+
+<body data-layout-mode="dark" data-topbar="dark" data-sidebar="dark" class="sidebar-enable">
+
+    <!-- Begin page -->
+    <div id="layout-wrapper">
+        <header id="page-topbar">
+            <div class="navbar-header">
+                <div class="d-flex">
+                    <!-- LOGO -->
+                    <div class="navbar-brand-box">
+                        <a href="" class="logo logo-dark">
+                            <span class="logo-sm">
+                                <img src="static/picture/logo.png" alt="" height="24">
+                            </span>
+                            <span class="logo-lg">
+                                <img src="static/picture/logo.png" alt="" height="24"> <span class="logo-txt">驭能能源管理系统</span>
+                            </span>
+                        </a>
+
+                        <a href="" class="logo logo-light">
+                            <span class="logo-sm">
+                                <img src="static/picture/logo.png" alt="" height="24">
+                            </span>
+                            <span class="logo-lg">
+                                <img src="static/picture/logo.png" alt="" height="24"> <span class="logo-txt">驭能能源管理系统</span>
+                            </span>
+                        </a>
+                    </div>
+
+                    <button type="button" class="btn btn-sm px-3 font-size-16 header-item" id="vertical-menu-btn">
+                        <i class="fa fa-fw fa-bars"></i>
+                    </button>
+
+                    <!-- App Search-->
+                    <form class="app-search d-none d-lg-block">
+                        <div class="position-relative">
+                            <input type="text" class="form-control" placeholder="Search...">
+                            <button class="btn btn-primary" type="button"><i class="bx bx-search-alt align-middle"></i></button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="d-flex">
+
+                    <div class="dropdown d-inline-block d-lg-none ms-2">
+                        <button type="button" class="btn header-item" id="page-header-search-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i data-feather="search" class="icon-lg"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0" aria-labelledby="page-header-search-dropdown">
+    
+                            <form class="p-3">
+                                <div class="form-group m-0">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" placeholder="Search ..." aria-label="Search Result">
+
+                                        <button class="btn btn-primary" type="submit"><i class="mdi mdi-magnify"></i></button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="dropdown d-none d-sm-inline-block">
+                        <button type="button" class="btn header-item" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <img id="header-lang-img" src="static/picture/cn.png" alt="Header Language" height="16">
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end">
+
+                            <!-- item-->
+                            <a href="javascript:void(0);" class="dropdown-item notify-item language" data-lang="en">
+                                <img src="static/picture/cn.png" alt="user-image" class="me-1" height="12"> <span class="align-middle">Chinese</span>
+                            </a>
+                            <!-- item-->
+                            <a href="javascript:void(0);" class="dropdown-item notify-item language" data-lang="sp">
+                                <img src="static/picture/spain.jpg" alt="user-image" class="me-1" height="12"> <span class="align-middle">Spanish</span>
+                            </a>
+
+                            <!-- item-->
+                            <a href="javascript:void(0);" class="dropdown-item notify-item language" data-lang="gr">
+                                <img src="static/picture/germany.jpg" alt="user-image" class="me-1" height="12"> <span class="align-middle">German</span>
+                            </a>
+
+                            <!-- item-->
+                            <a href="javascript:void(0);" class="dropdown-item notify-item language" data-lang="it">
+                                <img src="static/picture/italy.jpg" alt="user-image" class="me-1" height="12"> <span class="align-middle">Italian</span>
+                            </a>
+
+                            <!-- item-->
+                            <a href="javascript:void(0);" class="dropdown-item notify-item language" data-lang="ru">
+                                <img src="static/picture/russia.jpg" alt="user-image" class="me-1" height="12"> <span class="align-middle">Russian</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="dropdown d-none d-sm-inline-block">
+                        <button type="button" class="btn header-item" id="mode-setting-btn">
+                            <i data-feather="moon" class="icon-lg layout-mode-dark"></i>
+                            <i data-feather="sun" class="icon-lg layout-mode-light"></i>
+                        </button>
+                    </div>
+
+                    <div class="dropdown d-none d-lg-inline-block ms-1">
+                        <button type="button" class="btn header-item" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i data-feather="grid" class="icon-lg"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end">
+                            <div class="p-2">
+                                <div class="row g-0">
+                                    <div class="col">
+                                        <a class="dropdown-icon-item" href="#">
+                                            <img src="static/picture/github.png" alt="Github">
+                                            <span>GitHub</span>
+                                        </a>
+                                    </div>
+                                    <div class="col">
+                                        <a class="dropdown-icon-item" href="#">
+                                            <img src="static/picture/bitbucket.png" alt="bitbucket">
+                                            <span>Bitbucket</span>
+                                        </a>
+                                    </div>
+                                    <div class="col">
+                                        <a class="dropdown-icon-item" href="#">
+                                            <img src="static/picture/dribbble.png" alt="dribbble">
+                                            <span>Dribbble</span>
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="row g-0">
+                                    <div class="col">
+                                        <a class="dropdown-icon-item" href="#">
+                                            <img src="static/picture/dropbox.png" alt="dropbox">
+                                            <span>Dropbox</span>
+                                        </a>
+                                    </div>
+                                    <div class="col">
+                                        <a class="dropdown-icon-item" href="#">
+                                            <img src="static/picture/mail_chimp.png" alt="mail_chimp">
+                                            <span>Mail Chimp</span>
+                                        </a>
+                                    </div>
+                                    <div class="col">
+                                        <a class="dropdown-icon-item" href="#">
+                                            <img src="static/picture/slack.png" alt="slack">
+                                            <span>Slack</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dropdown d-inline-block">
+                        <button type="button" class="btn header-item noti-icon position-relative" id="page-header-notifications-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i data-feather="bell" class="icon-lg"></i>
+                            <span class="badge bg-danger rounded-pill">5</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0" aria-labelledby="page-header-notifications-dropdown">
+                            <div class="p-3">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <h6 class="m-0"> Notifications </h6>
+                                    </div>
+                                    <div class="col-auto">
+                                        <a href="#!" class="small text-reset text-decoration-underline"> Unread (3)</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div data-simplebar="" style="max-height: 230px;">
+                                <a href="#!" class="text-reset notification-item">
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0 me-3">
+                                            <img src="static/picture/avatar-3.jpg" class="rounded-circle avatar-sm" alt="user-pic">
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">James Lemire</h6>
+                                            <div class="font-size-13 text-muted">
+                                                <p class="mb-1">It will seem like simplified Chinese.</p>
+                                                <p class="mb-0"><i class="mdi mdi-clock-outline"></i> <span>1 hours ago</span></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                                <a href="#!" class="text-reset notification-item">
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0 avatar-sm me-3">
+                                            <span class="avatar-title bg-primary rounded-circle font-size-16">
+                                                <i class="bx bx-cart"></i>
+                                            </span>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">Your order is placed</h6>
+                                            <div class="font-size-13 text-muted">
+                                                <p class="mb-1">If several languages coalesce the grammar</p>
+                                                <p class="mb-0"><i class="mdi mdi-clock-outline"></i> <span>3 min ago</span></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                                <a href="#!" class="text-reset notification-item">
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0 avatar-sm me-3">
+                                            <span class="avatar-title bg-success rounded-circle font-size-16">
+                                                <i class="bx bx-badge-check"></i>
+                                            </span>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">Your item is shipped</h6>
+                                            <div class="font-size-13 text-muted">
+                                                <p class="mb-1">If several languages coalesce the grammar</p>
+                                                <p class="mb-0"><i class="mdi mdi-clock-outline"></i> <span>3 min ago</span></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+
+                                <a href="#!" class="text-reset notification-item">
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0 me-3">
+                                            <img src="static/picture/avatar-6.jpg" class="rounded-circle avatar-sm" alt="user-pic">
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">Salena Layfield</h6>
+                                            <div class="font-size-13 text-muted">
+                                                <p class="mb-1">As a skeptical Cambridge friend of mine occidental.</p>
+                                                <p class="mb-0"><i class="mdi mdi-clock-outline"></i> <span>1 hours ago</span></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="p-2 border-top d-grid">
+                                <a class="btn btn-sm btn-link font-size-14 text-center" href="javascript:void(0)">
+                                    <i class="mdi mdi-arrow-right-circle me-1"></i> <span>View More..</span> 
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dropdown d-inline-block">
+                        <button type="button" class="btn header-item right-bar-toggle me-2">
+                            <i data-feather="settings" class="icon-lg"></i>
+                        </button>
+                    </div>
+
+                    <div class="dropdown d-inline-block">
+                        <button type="button" class="btn header-item bg-soft-light border-start border-end" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <img class="rounded-circle header-profile-user" src="static/picture/avatar-1.jpg" alt="Header Avatar">
+                            <span class="d-none d-xl-inline-block ms-1 fw-medium">张明</span>
+                            <i class="mdi mdi-chevron-down d-none d-xl-inline-block"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <!-- item-->
+                            <a class="dropdown-item" href="apps-contacts-profile.html"><i class="mdi mdi-face-profile font-size-16 align-middle me-1"></i> Profile</a>
+                            <a class="dropdown-item" href="auth-lock-screen.html"><i class="mdi mdi-lock font-size-16 align-middle me-1"></i> Lock screen</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="auth-logout.html"><i class="mdi mdi-logout font-size-16 align-middle me-1"></i> Logout</a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </header>
+
+        <!-- ========== Left Sidebar Start ========== -->
+        <div class="vertical-menu">
+
+            <div data-simplebar class="h-100">
+
+                <!--- Sidemenu -->
+                <div id="sidebar-menu">
+                    <!-- Left Menu Start -->
+                    <ul class="metismenu list-unstyled" id="side-menu">
+                        <li class="menu-title" data-key="t-menu">View</li>
+
+                        <li>
+                            <a href="app-index.html">
+                                <i data-feather="home"></i>
+                                <span data-key="t-dashboard">数据总览</span>
+                            </a>
+                        </li>
+                        <li class="menu-title mt-2" data-key="t-components">Basic</li>
+                        <li>
+                            <a href="javascript: void(0);" class="has-arrow">
+                                <i data-feather="users"></i>
+                                <span data-key="t-authentication">个人界面</span>
+                            </a>
+                            <ul class="sub-menu" aria-expanded="false">
+                                <li>
+                                    <a href="app-contacts-profile.html">
+                                        <span data-key="t-calendar">个人信息</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="app-calendar.html">
+                                        <span data-key="t-calendar">日程表</span>
+                                    </a>
+                                </li>
+        
+                                <li>
+                                    <a href="app-chat.html">
+                                        <span data-key="t-chat">聊天</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="app-contacts-list.html">
+                                <i data-feather="file-text"></i>
+                                <span data-key="t-pages">用户列表</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title mt-2" data-key="t-components">Operations</li>
+
+                        <li>
+                            <a href="app-system_management.html">
+                                <i data-feather="grid"></i>
+                                <span data-key="t-apps">系统设置</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="app-data_management.html">
+                                <i data-feather="sliders"></i>
+                                <span data-key="t-tables">数据管理</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="app-business_process.html">
+                                <i data-feather="briefcase"></i>
+                                <span data-key="t-components">业务处理</span>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="app-equipment_management.html">
+                                <i data-feather="cpu"></i>
+                                <span data-key="t-icons">设备管理</span>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="app-inference-demo.html" class="active">
+                                <i data-feather="trending-up"></i>
+                                <span data-key="t-inference">推理示例</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <!-- Sidebar -->
+            </div>
+        </div>
+        <!-- Left Sidebar End -->
+
+        <!-- ============================================================== -->
+        <!-- Start right Content here -->
+        <!-- ============================================================== -->
+        <div class="main-content">
+            <div class="page-content">
+                <div class="container-fluid">
+
+                    <!-- 页面标题 -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                                <h4 class="mb-sm-0 font-size-18">时序预测推理示例</h4>
+                                <div class="page-title-right">
+                                    <ol class="breadcrumb m-0">
+                                        <li class="breadcrumb-item"><a href="app-index.html">首页</a></li>
+                                        <li class="breadcrumb-item active">推理示例</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 步骤指示器 -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="step-indicator">
+                                <div class="step active" id="step1">
+                                    <div class="step-number">1</div>
+                                    <div>数据上传</div>
+                                </div>
+                                <div class="step" id="step2">
+                                    <div class="step-number">2</div>
+                                    <div>数据预览</div>
+                                </div>
+                                <div class="step" id="step3">
+                                    <div class="step-number">3</div>
+                                    <div>目标变量选择</div>
+                                </div>
+                                <div class="step" id="step4">
+                                    <div class="step-number">4</div>
+                                    <div>预测结果</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 步骤1：数据上传 -->
+                    <div class="row" id="step1-content">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4 class="card-title">步骤1：数据上传</h4>
+                                    <p class="card-title-desc">请上传CSV格式的数据文件，或使用示例数据</p>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="upload-area" id="uploadArea">
+                                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                                <h5 class="upload-text">拖拽文件到此处或点击上传</h5>
+                                                <p class="upload-text">支持CSV格式文件</p>
+                                                <input type="file" id="fileInput" accept=".csv" style="display: none;">
+                                                <button class="btn btn-primary mt-2" onclick="document.getElementById('fileInput').click()">
+                                                    选择文件
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-4">
+                                        <div class="col-12">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h5 class="card-title">示例数据</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p>您也可以使用以下示例数据进行测试：</p>
+                                                    <div class="list-group">
+                                                        <button class="list-group-item list-group-item-action sample-dataset-item" onclick="loadSampleData('ETTh1')" data-dataset="ETTh1">
+                                                            <strong>ETTh1数据集</strong><br>
+                                                            <small class="text-muted">电力变压器负荷数据 (小时级)</small>
+                                                        </button>
+                                                        <button class="list-group-item list-group-item-action sample-dataset-item" onclick="loadSampleData('ETTh2')" data-dataset="ETTh2">
+                                                            <strong>ETTh2数据集</strong><br>
+                                                            <small class="text-muted">电力变压器负荷数据 (小时级)</small>
+                                                        </button>
+                                                        <button class="list-group-item list-group-item-action sample-dataset-item" onclick="loadSampleData('ETTm1')" data-dataset="ETTm1">
+                                                            <strong>ETTm1数据集</strong><br>
+                                                            <small class="text-muted">电力变压器负荷数据 (分钟级)</small>
+                                                        </button>
+                                                        <button class="list-group-item list-group-item-action sample-dataset-item" onclick="loadSampleData('ETTm2')" data-dataset="ETTm2">
+                                                            <strong>ETTm2数据集</strong><br>
+                                                            <small class="text-muted">电力变压器负荷数据 (分钟级)</small>
+                                                        </button>
+                                                        <button class="list-group-item list-group-item-action sample-dataset-item" onclick="loadSampleData('Electricity')" data-dataset="Electricity">
+                                                            <strong>Electricity数据集</strong><br>
+                                                            <small class="text-muted">电力消耗数据</small>
+                                                        </button>
+                                                        <button class="list-group-item list-group-item-action sample-dataset-item" onclick="loadSampleData('Wind')" data-dataset="Wind">
+                                                            <strong>Wind数据集</strong><br>
+                                                            <small class="text-muted">风力发电数据</small>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="step-navigation">
+                                        <div></div>
+                                        <button class="btn btn-primary" onclick="showStep2()" id="step1-next" disabled>
+                                            下一步 <i class="fas fa-arrow-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 步骤2：数据预览 -->
+                    <div class="row" id="step2-content" style="display: none;">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4 class="card-title">步骤2：数据预览</h4>
+                                    <p class="card-title-desc">查看上传数据的基本信息和前几行数据</p>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-md-3">
+                                            <div class="card bg-primary text-white">
+                                                <div class="card-body text-center">
+                                                    <h4 id="totalRows">0</h4>
+                                                    <p class="mb-0">总行数</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="card bg-success text-white">
+                                                <div class="card-body text-center">
+                                                    <h4 id="totalColumns">0</h4>
+                                                    <p class="mb-0">总列数</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="card bg-info text-white">
+                                                <div class="card-body text-center">
+                                                    <h4 id="dataType">-</h4>
+                                                    <p class="mb-0">数据类型</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="card bg-warning text-white">
+                                                <div class="card-body text-center">
+                                                    <h4 id="missingValues">0</h4>
+                                                    <p class="mb-0">缺失值</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="data-table-container">
+                                        <table class="table table-striped table-bordered" id="dataTable">
+                                            <thead id="tableHeader">
+                                            </thead>
+                                            <tbody id="tableBody">
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <div>
+                                            <span>第 <span id="currentPage">1</span> 页，共 <span id="totalPages">1</span> 页</span>
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-outline-primary btn-sm" id="prevPage" onclick="changePage(-1)">上一页</button>
+                                            <button class="btn btn-outline-primary btn-sm" id="nextPage" onclick="changePage(1)">下一页</button>
+                                        </div>
+                                    </div>
+                                    <div class="step-navigation">
+                                        <button class="btn btn-outline-secondary" onclick="showStep1()">
+                                            <i class="fas fa-arrow-left"></i> 上一步
+                                        </button>
+                                        <button class="btn btn-primary" onclick="showStep3()">
+                                            下一步 <i class="fas fa-arrow-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 步骤3：目标变量选择 -->
+                    <div class="row" id="step3-content" style="display: none;">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4 class="card-title">步骤3：目标变量选择</h4>
+                                    <p class="card-title-desc">选择要预测的目标变量并查看其趋势</p>
+                                </div>
+                                <div class="card-body">
+                                    <!-- 目标变量选择 -->
+                                    <div class="row mb-4">
+                                        <div class="col-12">
+                                            <div class="section-header mb-3">
+                                                <i class="fas fa-bullseye me-2"></i>
+                                                <h5 class="mb-0">目标变量选择</h5>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="targetVariable" class="form-label">目标变量</label>
+                                                <select class="form-select" id="targetVariable">
+                                                    <option value="">请选择目标变量</option>
+                                                </select>
+                                            </div>
+                                                </div>
+                                            </div>
+                                    
+                                    <!-- 变量信息 -->
+                                    <div class="row mb-4">
+                                        <div class="col-12">
+                                            <div class="section-header mb-3">
+                                                <i class="fas fa-chart-bar me-2"></i>
+                                                <h5 class="mb-0">变量信息</h5>
+                                        </div>
+                                            <div class="card variable-info-card">
+                                                <div class="card-body">
+                                                    <div id="variableInfo">
+                                                        <p class="text-muted">请先选择目标变量</p>
+                                                    </div>
+                                                    <div id="variableStats" class="mt-3">
+                                                        <!-- 统计信息将在这里显示 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                                    <!-- 数据趋势图表 -->
+                                    <div class="row">
+                        <div class="col-12">
+                                            <div class="section-header mb-3">
+                                                <i class="fas fa-chart-line me-2"></i>
+                                                <h5 class="mb-0">数据趋势图</h5>
+                                </div>
+                                    <div class="chart-container">
+                                        <canvas id="trendChart"></canvas>
+                                    </div>
+                                    <div class="mt-3">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle"></i>
+                                                    <strong>交互提示：</strong>您可以使用鼠标滚轮进行横轴缩放，或框选区域进行局部放大
+                                        </div>
+                                    </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="step-navigation">
+                                        <button class="btn btn-outline-secondary" onclick="showStep2()">
+                                            <i class="fas fa-arrow-left"></i> 上一步
+                                        </button>
+                                        <button class="btn btn-primary" onclick="showStep4()" id="step3-next" disabled>
+                                            下一步 <i class="fas fa-arrow-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 步骤4：预测结果 -->
+                    <div class="row" id="step4-content" style="display: none;">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4 class="card-title">步骤4：预测结果</h4>
+                                    <p class="card-title-desc">配置预测参数并查看预测结果</p>
+                                </div>
+                                <div class="card-body">
+                                    <div class="prediction-controls">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label for="startPosition">历史数据起始位置</label>
+                                                    <input type="number" class="form-control" id="startPosition" min="0" placeholder="起始索引">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <div class="form-group">
+                                                        <label for="midPosition">历史数据终止位置</label>
+                                                        <input type="number" class="form-control" id="midPosition" min="0" max="" placeholder="终止索引">
+                                                        <small class="form-text text-white">最大不能超过 <span id="maxMidPosition">请先加载数据</span></small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label for="forecastLength">预测长度</label>
+                                                                                                         <input type="number" class="form-control" id="forecastLength" min="1" max="1000" value="200" placeholder="预测步数">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>&nbsp;</label>
+                                                    <button class="btn btn-primary w-100" onclick="startPrediction()">
+                                                        <i class="fas fa-play me-2"></i>开始预测
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="chart-container" id="predictionChartContainer" style="display: none;">
+                                        <div class="loading-overlay" id="predictionLoading">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">预测中...</span>
+                                            </div>
+                                        </div>
+                                        <canvas id="predictionChart"></canvas>
+                                    </div>
+                                    <div class="mt-3" id="predictionChartInfo" style="display: none;">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle"></i>
+                                            <strong>交互提示：</strong>您可以使用鼠标滚轮进行横轴缩放，或框选区域进行局部放大
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mt-3" id="predictionResults" style="display: none;">
+                                        <div class="col-12">
+                                            <div class="section-header mb-3">
+                                                <i class="fas fa-chart-bar me-2"></i>
+                                                <h5 class="mb-0">预测统计结果</h5>
+                                            </div>
+                                            <div class="card variable-info-card">
+                                                <div class="card-body">
+                                                    <div id="predictionStats">
+                                                        <!-- 预测统计信息 -->
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <!-- container-fluid -->
+            </div>
+            <!-- End Page-content -->
+        </div>
+        <!-- end main content-->
+
+    </div>
+    <!-- END layout-wrapper -->
+
+    <!-- JAVASCRIPT -->
+    <script src="static/js/jquery.min.js"></script>
+    <script src="static/js/bootstrap.bundle.min.js"></script>
+    <script src="static/js/metisMenu.min.js"></script>
+    <script src="static/js/simplebar.min.js"></script>
+    <script src="static/js/waves.min.js"></script>
+    <script src="static/js/feather.min.js"></script>
+    <!-- pace js -->
+    <script src="static/js/pace.min.js"></script>
+    <!-- dashboard init -->
+    <script src="static/js/dashboard.init.js"></script>
+    <script src="static/js/app.js"></script>
+
+    <script>
+        // 全局变量
+        let currentData = null;
+        let currentPage = 1;
+        let rowsPerPage = 10;
+        let trendChart = null;
+        let predictionChart = null;
+        let currentStep = 1;
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeUploadArea();
+            feather.replace();
+        });
+
+        // 初始化上传区域
+        function initializeUploadArea() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+
+            // 点击上传
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            // 文件选择
+            fileInput.addEventListener('change', handleFileSelect);
+
+            // 拖拽上传
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            });
+        }
+
+        // 处理文件选择
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        // 处理文件
+        function handleFile(file) {
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                alert('请选择CSV格式的文件');
+                return;
+            }
+
+            // 移除示例数据集的选择状态
+            document.querySelectorAll('.sample-dataset-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csv = e.target.result;
+                Papa.parse(csv, {
+                    header: true,
+                    complete: function(results) {
+                        if (results.errors.length > 0) {
+                            alert('CSV文件解析错误：' + results.errors[0].message);
+                            return;
+                        }
+                        currentData = results.data;
+                        document.getElementById('step1-next').disabled = false;
+                        showStep2();
+                    }
+                });
+            };
+            reader.readAsText(file);
+        }
+
+        // 加载示例数据
+        function loadSampleData(datasetName) {
+            // 移除之前的选择状态
+            document.querySelectorAll('.sample-dataset-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // 添加当前选择状态
+            const selectedItem = document.querySelector(`[data-dataset="${datasetName}"]`);
+            if (selectedItem) {
+                selectedItem.classList.add('selected');
+            }
+            
+            fetch(`/api/inference/sample-data/${datasetName}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        currentData = data.data;
+                        document.getElementById('step1-next').disabled = false;
+                        showStep2();
+                    } else {
+                        alert('加载示例数据失败：' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('加载示例数据失败');
+                });
+        }
+
+        // 显示步骤1
+        function showStep1() {
+            updateStepIndicator(1);
+            document.getElementById('step1-content').style.display = 'block';
+            document.getElementById('step2-content').style.display = 'none';
+            document.getElementById('step3-content').style.display = 'none';
+            document.getElementById('step4-content').style.display = 'none';
+        }
+
+        // 显示步骤2
+        function showStep2() {
+            updateStepIndicator(2);
+            document.getElementById('step1-content').style.display = 'none';
+            document.getElementById('step2-content').style.display = 'block';
+            document.getElementById('step3-content').style.display = 'none';
+            document.getElementById('step4-content').style.display = 'none';
+            
+            displayDataPreview();
+            
+            // 更新步骤4中的最大值显示
+            updateMaxPositionDisplay();
+        }
+
+        // 显示数据预览
+        function displayDataPreview() {
+            if (!currentData || currentData.length === 0) return;
+
+            // 更新统计信息
+            document.getElementById('totalRows').textContent = currentData.length;
+            document.getElementById('totalColumns').textContent = Object.keys(currentData[0]).length;
+            document.getElementById('dataType').textContent = 'CSV';
+            
+            // 计算缺失值
+            let missingCount = 0;
+            currentData.forEach(row => {
+                Object.values(row).forEach(value => {
+                    if (value === '' || value === null || value === undefined) {
+                        missingCount++;
+                    }
+                });
+            });
+            document.getElementById('missingValues').textContent = missingCount;
+
+            // 显示表格
+            displayDataTable();
+        }
+
+        // 显示数据表格
+        function displayDataTable() {
+            const headers = Object.keys(currentData[0]);
+            const tableHeader = document.getElementById('tableHeader');
+            const tableBody = document.getElementById('tableBody');
+
+            // 清空表格
+            tableHeader.innerHTML = '';
+            tableBody.innerHTML = '';
+
+            // 添加表头 - 保持原有顺序
+            const headerRow = document.createElement('tr');
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            tableHeader.appendChild(headerRow);
+
+            // 计算分页
+            const totalPages = Math.ceil(currentData.length / rowsPerPage);
+            document.getElementById('totalPages').textContent = totalPages;
+            document.getElementById('currentPage').textContent = currentPage;
+
+            // 显示当前页数据
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, currentData.length);
+
+            for (let i = startIndex; i < endIndex; i++) {
+                const row = document.createElement('tr');
+                headers.forEach(header => {
+                    const td = document.createElement('td');
+                    td.textContent = currentData[i][header] || '';
+                    row.appendChild(td);
+                });
+                tableBody.appendChild(row);
+            }
+
+            // 更新分页按钮状态
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = currentPage === totalPages;
+        }
+
+        // 切换页面
+        function changePage(direction) {
+            const totalPages = Math.ceil(currentData.length / rowsPerPage);
+            const newPage = currentPage + direction;
+            
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                displayDataTable();
+            }
+        }
+
+        // 显示步骤3
+        function showStep3() {
+            updateStepIndicator(3);
+            document.getElementById('step1-content').style.display = 'none';
+            document.getElementById('step2-content').style.display = 'none';
+            document.getElementById('step3-content').style.display = 'block';
+            document.getElementById('step4-content').style.display = 'none';
+            
+            populateVariableSelect();
+            
+            // 更新步骤4中的最大值显示
+            updateMaxPositionDisplay();
+        }
+
+        // 填充变量选择下拉框
+        function populateVariableSelect() {
+            const select = document.getElementById('targetVariable');
+            select.innerHTML = '<option value="">请选择目标变量</option>';
+            
+            if (currentData && currentData.length > 0) {
+                const headers = Object.keys(currentData[0]);
+                headers.forEach(header => {
+                    const option = document.createElement('option');
+                    option.value = header;
+                    option.textContent = header;
+                    select.appendChild(option);
+                });
+            }
+
+            // 添加选择事件
+            select.addEventListener('change', function() {
+                if (this.value) {
+                    showVariableInfo(this.value);
+                    drawTrendChart(); // 自动绘制趋势图
+                    document.getElementById('step3-next').disabled = false;
+                } else {
+                    document.getElementById('step3-next').disabled = true;
+                }
+            });
+        }
+
+        // 显示变量信息
+        function showVariableInfo(variableName) {
+            const values = currentData.map(row => parseFloat(row[variableName])).filter(val => !isNaN(val));
+            
+            if (values.length === 0) {
+                document.getElementById('variableInfo').innerHTML = '<p class="text-danger">该变量没有有效的数值数据</p>';
+                document.getElementById('variableStats').innerHTML = '';
+                return;
+            }
+
+            // 计算统计信息
+            const sortedValues = values.sort((a, b) => a - b);
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            const mean = values.reduce((a, b) => a + b, 0) / values.length;
+            const std = Math.sqrt(values.reduce((sq, n) => sq + Math.pow(n - mean, 2), 0) / values.length);
+            const q25 = sortedValues[Math.floor(sortedValues.length * 0.25)];
+            const q50 = sortedValues[Math.floor(sortedValues.length * 0.5)];
+            const q75 = sortedValues[Math.floor(sortedValues.length * 0.75)];
+            const range = max - min;
+
+                        // 显示优化的变量信息格式
+            document.getElementById('variableInfo').innerHTML = `
+                <!-- 基础信息 -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="info-section-header mb-2">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <h6 class="mb-0">变量基础信息</h6>
+                    </div>
+                                                 <div class="row g-2">
+                             <div class="col-md-3">
+                                 <div class="info-item">
+                                     <div class="info-label">变量名称</div>
+                                     <div class="info-value variable-name">${variableName}</div>
+                    </div>
+                    </div>
+                             <div class="col-md-3">
+                                 <div class="info-item">
+                                     <div class="info-label">数据类型</div>
+                                     <div class="info-value">数值型</div>
+                </div>
+                    </div>
+                             <div class="col-md-3">
+                                 <div class="info-item">
+                                     <div class="info-label">数据点数</div>
+                                     <div class="info-value">${values.length.toLocaleString()}</div>
+                    </div>
+                    </div>
+                             <div class="col-md-3">
+                                 <div class="info-item">
+                                     <div class="info-label">有效数据</div>
+                                     <div class="info-value">${((values.length / currentData.length) * 100).toFixed(1)}%</div>
+                </div>
+                    </div>
+                    </div>
+                    </div>
+                </div>
+
+                                 <!-- 统计信息横向排布 -->
+                 <div class="row mb-3">
+                     <!-- 描述性统计 -->
+                     <div class="col-md-4">
+                         <div class="info-section-header mb-2">
+                             <i class="fas fa-chart-bar me-2"></i>
+                             <h6 class="mb-0">描述性统计</h6>
+                         </div>
+                         <div class="d-flex flex-column g-2">
+                             <div class="info-item stat-item min-stat mb-2">
+                                 <div class="info-label stat-label">最小值</div>
+                                 <div class="info-value stat-value">${min.toFixed(4)}</div>
+                             </div>
+                             <div class="info-item stat-item max-stat mb-2">
+                                 <div class="info-label stat-label">最大值</div>
+                                 <div class="info-value stat-value">${max.toFixed(4)}</div>
+                             </div>
+                             <div class="info-item stat-item range-stat">
+                                 <div class="info-label stat-label">数据范围</div>
+                                 <div class="info-value stat-value">${range.toFixed(4)}</div>
+                             </div>
+                         </div>
+                     </div>
+
+                     <!-- 中心趋势 -->
+                     <div class="col-md-4">
+                         <div class="info-section-header mb-2">
+                             <i class="fas fa-bullseye me-2"></i>
+                             <h6 class="mb-0">中心趋势</h6>
+                         </div>
+                         <div class="d-flex flex-column g-2">
+                             <div class="info-item stat-item mean-stat mb-2">
+                                 <div class="info-label stat-label">平均值</div>
+                                 <div class="info-value stat-value">${mean.toFixed(4)}</div>
+                             </div>
+                             <div class="info-item stat-item median-stat mb-2">
+                                 <div class="info-label stat-label">中位数</div>
+                                 <div class="info-value stat-value">${q50.toFixed(4)}</div>
+                             </div>
+                             <div class="info-item stat-item std-stat">
+                                 <div class="info-label stat-label">标准差</div>
+                                 <div class="info-value stat-value">${std.toFixed(4)}</div>
+                             </div>
+                         </div>
+                     </div>
+
+                     <!-- 分位数信息 -->
+                     <div class="col-md-4">
+                         <div class="info-section-header mb-2">
+                             <i class="fas fa-percentage me-2"></i>
+                             <h6 class="mb-0">分位数分布</h6>
+                         </div>
+                         <div class="d-flex flex-column g-2">
+                             <div class="info-item stat-item q1-stat mb-2">
+                                 <div class="info-label stat-label">Q1 (25%)</div>
+                                 <div class="info-value stat-value">${q25.toFixed(4)}</div>
+                             </div>
+                             <div class="info-item stat-item q2-stat mb-2">
+                                 <div class="info-label stat-label">Q2 (50%)</div>
+                                 <div class="info-value stat-value">${q50.toFixed(4)}</div>
+                             </div>
+                             <div class="info-item stat-item q3-stat">
+                                 <div class="info-label stat-label">Q3 (75%)</div>
+                                 <div class="info-value stat-value">${q75.toFixed(4)}</div>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+            `;
+
+            // 清空统计图表区域，因为信息已经合并到上面
+            document.getElementById('variableStats').innerHTML = '';
+        }
+
+        // 更新最大值显示
+        function updateMaxPositionDisplay() {
+            if (currentData && currentData.length > 0) {
+                const dataLength = currentData.length;
+                const maxMidPosition = dataLength - 1;
+                const maxMidPositionElement = document.getElementById('maxMidPosition');
+                if (maxMidPositionElement) {
+                    maxMidPositionElement.textContent = maxMidPosition;
+                }
+            }
+        }
+
+        // 显示步骤4
+        function showStep4() {
+            updateStepIndicator(4);
+            document.getElementById('step1-content').style.display = 'none';
+            document.getElementById('step2-content').style.display = 'none';
+            document.getElementById('step3-content').style.display = 'none';
+            document.getElementById('step4-content').style.display = 'block';
+            
+            // 设置默认值和约束
+            const dataLength = currentData.length;
+            const maxMidPosition = dataLength - 1;
+            
+            // 设置默认值：历史数据起始位置6000，终止位置7000，预测长度200
+            document.getElementById('startPosition').value = 6000;
+            document.getElementById('midPosition').value = 7000;
+            document.getElementById('forecastLength').value = 200;
+            
+            // 设置历史数据终止位置的最大值约束
+            document.getElementById('midPosition').max = maxMidPosition;
+            
+            // 更新最大值显示
+            updateMaxPositionDisplay();
+            
+            // 添加输入验证事件监听器
+            addInputValidationListeners();
+        }
+
+        // 绘制趋势图
+        function drawTrendChart() {
+            const variableName = document.getElementById('targetVariable').value;
+            const values = currentData.map(row => parseFloat(row[variableName])).filter(val => !isNaN(val));
+            const labels = Array.from({length: values.length}, (_, i) => i);
+
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            
+            if (trendChart) {
+                trendChart.destroy();
+            }
+
+            // 计算纵轴范围，使其美观
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            const range = max - min;
+            const padding = range * 0.1; // 添加10%的边距
+            const yMin = min - padding;
+            const yMax = max + padding;
+
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: variableName,
+                        data: values,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        tension: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `${variableName} 趋势图`,
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        zoom: {
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                    speed: 0.1
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'x', // 只允许横轴缩放
+                                drag: {
+                                    enabled: true,
+                                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                                    borderColor: 'rgb(75, 192, 192)',
+                                    borderWidth: 1
+                                }
+                            },
+                            pan: {
+                                enabled: true,
+                                mode: 'x', // 只允许横轴平移
+                                modifierKey: 'ctrl'
+                            },
+                            limits: {
+                                x: {min: 'original', max: 'original'},
+                                y: {min: yMin, max: yMax} // 固定纵轴范围
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: '时间步',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: variableName,
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0,0,0,0.1)'
+                            },
+                            min: yMin,
+                            max: yMax,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(4);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+
+
+
+
+        // 验证历史数据长度
+        function validateHistoryLength() {
+            const startPosition = parseInt(document.getElementById('startPosition').value);
+            const midPosition = parseInt(document.getElementById('midPosition').value);
+            
+            if (isNaN(startPosition) || isNaN(midPosition)) {
+                return false;
+            }
+            
+            const historyLength = midPosition - startPosition + 1;
+            
+            if (historyLength > 1024) {
+                alert('历史数据上下文长度不应超过1024，当前长度为：' + historyLength + '。请重新输入参数。');
+                return false;
+            }
+            
+            return true;
+        }
+
+        // 添加输入验证监听器
+        function addInputValidationListeners() {
+            const startPositionInput = document.getElementById('startPosition');
+            const midPositionInput = document.getElementById('midPosition');
+            const forecastLengthInput = document.getElementById('forecastLength');
+            const predictButton = document.querySelector('button[onclick="startPrediction()"]');
+            
+            // 创建验证函数
+            function validateInputs() {
+                const startPosition = parseInt(startPositionInput.value);
+                const midPosition = parseInt(midPositionInput.value);
+                const forecastLength = parseInt(forecastLengthInput.value);
+                
+                // 检查基本有效性
+                if (isNaN(startPosition) || isNaN(midPosition) || isNaN(forecastLength)) {
+                    predictButton.disabled = true;
+                    return;
+                }
+                
+                // 检查历史数据长度
+                const historyLength = midPosition - startPosition + 1;
+                if (historyLength > 1024) {
+                    predictButton.disabled = true;
+                    // 显示警告提示
+                    showHistoryLengthWarning(historyLength);
+                    return;
+                }
+                
+                // 隐藏警告提示
+                hideHistoryLengthWarning();
+                
+                // 检查其他约束
+                if (startPosition >= 0 && midPosition >= startPosition && forecastLength > 0) {
+                    predictButton.disabled = false;
+                } else {
+                    predictButton.disabled = true;
+                }
+            }
+            
+            // 添加事件监听器
+            startPositionInput.addEventListener('input', validateInputs);
+            midPositionInput.addEventListener('input', validateInputs);
+            forecastLengthInput.addEventListener('change', validateInputs);
+            
+            // 初始验证
+            validateInputs();
+        }
+
+        // 显示历史数据长度警告
+        function showHistoryLengthWarning(historyLength) {
+            let warningElement = document.getElementById('historyLengthWarning');
+            if (!warningElement) {
+                warningElement = document.createElement('div');
+                warningElement.id = 'historyLengthWarning';
+                warningElement.className = 'alert alert-warning mt-2';
+                warningElement.innerHTML = `
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>警告：</strong>历史数据上下文长度不应超过1024，当前长度为：${historyLength}
+                `;
+                
+                // 插入到预测控制区域之后
+                const predictionControls = document.querySelector('.prediction-controls');
+                predictionControls.appendChild(warningElement);
+            } else {
+                warningElement.innerHTML = `
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>警告：</strong>历史数据上下文长度不应超过1024，当前长度为：${historyLength}
+                `;
+                warningElement.style.display = 'block';
+            }
+        }
+
+        // 隐藏历史数据长度警告
+        function hideHistoryLengthWarning() {
+            const warningElement = document.getElementById('historyLengthWarning');
+            if (warningElement) {
+                warningElement.style.display = 'none';
+            }
+        }
+
+        // 开始预测
+        function startPrediction() {
+            const startPosition = parseInt(document.getElementById('startPosition').value);
+            const midPosition = parseInt(document.getElementById('midPosition').value);
+            const forecastLength = parseInt(document.getElementById('forecastLength').value);
+            const targetVariable = document.getElementById('targetVariable').value;
+
+            if (!targetVariable) {
+                alert('请先选择目标变量');
+                return;
+            }
+
+            if (isNaN(startPosition) || isNaN(midPosition) || isNaN(forecastLength)) {
+                alert('请输入有效的预测参数');
+                return;
+            }
+
+            // 验证历史数据长度
+            if (!validateHistoryLength()) {
+                return;
+            }
+
+            // 显示加载状态
+            document.getElementById('predictionChartContainer').style.display = 'block';
+            document.getElementById('predictionLoading').style.display = 'flex';
+            document.getElementById('predictionChartInfo').style.display = 'none';
+
+            // 准备预测数据
+            const predictionData = {
+                data: currentData,
+                target_variable: targetVariable,
+                start_position: startPosition,
+                mid_position: midPosition,
+                forecast_length: forecastLength
+            };
+
+            // 发送预测请求
+            fetch('/api/inference/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(predictionData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('predictionLoading').style.display = 'none';
+                
+                if (data.success) {
+                    displayPredictionResults(data.result);
+                } else {
+                    alert('预测失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                document.getElementById('predictionLoading').style.display = 'none';
+                console.error('Error:', error);
+                alert('预测请求失败');
+            });
+        }
+
+        // 显示预测结果
+        function displayPredictionResults(result) {
+            const ctx = document.getElementById('predictionChart').getContext('2d');
+            
+            if (predictionChart) {
+                predictionChart.destroy();
+            }
+
+            // 获取预测参数
+            const startPosition = parseInt(document.getElementById('startPosition').value);
+            const midPosition = parseInt(document.getElementById('midPosition').value);
+            const forecastLength = parseInt(document.getElementById('forecastLength').value);
+            const targetVariable = document.getElementById('targetVariable').value;
+            
+            // 准备数据 - 重新设计数据映射逻辑
+            // 历史数据：从startPosition到midPosition
+            const lookbackData = [];
+            const lookbackLabels = [];
+            for (let i = startPosition; i <= midPosition; i++) {
+                lookbackData.push(result.history[i - startPosition]);
+                lookbackLabels.push(i);
+            }
+
+            // 真实值：从midPosition+1到midPosition+forecastLength
+            const groundtruthData = [];
+            const groundtruthLabels = [];
+            for (let i = 0; i < result.groundtruth.length; i++) {
+                groundtruthData.push(result.groundtruth[i]);
+                groundtruthLabels.push(midPosition + 1 + i);
+            }
+
+            // 预测数据：从midPosition+1到midPosition+forecastLength
+            const predictionData = [];
+            const predictionLabels = [];
+            for (let i = 0; i < result.prediction.length; i++) {
+                predictionData.push(result.prediction[i]);
+                predictionLabels.push(midPosition + 1 + i);
+            }
+
+            // 数据准备完成，现在只保留主要的数据集用于显示
+
+            // 计算纵轴范围 - 动态确定，但保持固定长度
+            const allValues = [...lookbackData, ...groundtruthData, ...predictionData];
+            const min = Math.min(...allValues);
+            const max = Math.max(...allValues);
+            const range = max - min;
+            const padding = range * 0.1; // 添加10%的边距
+            const yMin = min - padding;
+            const yMax = max + padding;
+
+            predictionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: '历史数据',
+                            data: lookbackData.map((value, index) => ({
+                                x: lookbackLabels[index],
+                                y: value
+                            })),
+                            borderColor: 'rgb(0, 255, 255)',
+                            backgroundColor: 'rgba(0, 255, 255, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            pointHoverRadius: 4,
+                            tension: 0
+                        },
+
+                        {
+                            label: '真实值',
+                            data: groundtruthData.map((value, index) => ({
+                                x: groundtruthLabels[index],
+                                y: value
+                            })),
+                            borderColor: 'rgb(255, 0, 0)',
+                            backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            pointHoverRadius: 4,
+                            tension: 0
+                        },
+                        {
+                            label: '预测区间',
+                            data: predictionData.map((value, index) => ({
+                                x: predictionLabels[index],
+                                y: value
+                            })),
+                            borderColor: 'rgb(65, 105, 225)',
+                            backgroundColor: 'rgba(65, 105, 225, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            pointHoverRadius: 4,
+                            tension: 0,
+                            fill: false
+                        },
+
+                        {
+                            label: '分割线',
+                            data: [
+                                { x: midPosition, y: yMin },
+                                { x: midPosition, y: yMax }
+                            ],
+                            borderColor: 'rgba(255, 255, 255, 0.8)',
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [8, 4],
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            tension: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '时序预测结果',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                filter: function(legendItem, data) {
+                                    // 显示所有主要数据集的图例
+                                    return true;
+                                }
+                            }
+                        },
+                        zoom: {
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                    speed: 0.1
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'x', // 只允许横轴缩放
+                                drag: {
+                                    enabled: true,
+                                    backgroundColor: 'rgba(65, 105, 225, 0.1)',
+                                    borderColor: 'rgba(65, 105, 225, 0.8)',
+                                    borderWidth: 1
+                                }
+                            },
+                            pan: {
+                                enabled: true,
+                                mode: 'x', // 只允许横轴平移
+                                modifierKey: 'ctrl'
+                            },
+                            limits: {
+                                x: {min: 'original', max: 'original'},
+                                y: {min: yMin, max: yMax} // 固定纵轴范围
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: {
+                                display: true,
+                                text: '时间步',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0,0,0,0.1)'
+                            },
+                            min: startPosition,
+                            max: midPosition + forecastLength,
+                            ticks: {
+                                stepSize: Math.max(1, Math.floor((midPosition + forecastLength - startPosition) / 10))
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: targetVariable,
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0,0,0,0.1)'
+                            },
+                            min: yMin,
+                            max: yMax,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(4);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 显示预测统计信息
+            displayPredictionStats(result);
+            document.getElementById('predictionResults').style.display = 'block';
+            document.getElementById('predictionChartInfo').style.display = 'block';
+        }
+
+        // 显示预测统计信息
+        function displayPredictionStats(result) {
+            const statsDiv = document.getElementById('predictionStats');
+
+            // 计算预测误差
+            const mse = calculateMSE(result.prediction, result.groundtruth);
+            const mae = calculateMAE(result.prediction, result.groundtruth);
+            const rmse = Math.sqrt(mse);
+            const mape = calculateMAPE(result.prediction, result.groundtruth);
+
+            statsDiv.innerHTML = `
+                <!-- 基础信息 -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="info-section-header mb-2">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <h6 class="mb-0">预测基础信息</h6>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <div class="info-item">
+                                    <div class="info-label">预测长度</div>
+                                    <div class="info-value">${result.prediction.length}</div>
+                                </div>
+                            </div>
+                                                         <div class="col-md-3">
+                                 <div class="info-item">
+                                     <div class="info-label">历史数据长度</div>
+                                     <div class="info-value">${parseInt(document.getElementById('midPosition').value) - parseInt(document.getElementById('startPosition').value) + 1}</div>
+                                 </div>
+                             </div>
+                                                         <div class="col-md-3">
+                                 <div class="info-item">
+                                     <div class="info-label">模型名称</div>
+                                     <div class="info-value">Sundial-Base-128M</div>
+                                 </div>
+                             </div>
+                            <div class="col-md-3">
+                                <div class="info-item">
+                                    <div class="info-label">预测方法</div>
+                                    <div class="info-value">零样本生成</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 误差统计 -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="info-section-header mb-2">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            <h6 class="mb-0">误差统计</h6>
+                        </div>
+                        <div class="d-flex flex-column g-2">
+                            <div class="info-item stat-item min-stat mb-2">
+                                <div class="info-label stat-label">均方误差 (MSE)</div>
+                                <div class="info-value stat-value">${mse.toFixed(4)}</div>
+                            </div>
+                            <div class="info-item stat-item max-stat mb-2">
+                                <div class="info-label stat-label">均方根误差 (RMSE)</div>
+                                <div class="info-value stat-value">${rmse.toFixed(4)}</div>
+                            </div>
+                            <div class="info-item stat-item range-stat">
+                                <div class="info-label stat-label">平均绝对误差 (MAE)</div>
+                                <div class="info-value stat-value">${mae.toFixed(4)}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 相对误差 -->
+                    <div class="col-md-4">
+                        <div class="info-section-header mb-2">
+                            <i class="fas fa-percentage me-2"></i>
+                            <h6 class="mb-0">相对误差</h6>
+                        </div>
+                        <div class="d-flex flex-column g-2">
+                            <div class="info-item stat-item mean-stat mb-2">
+                                <div class="info-label stat-label">平均绝对百分比误差</div>
+                                <div class="info-value stat-value">${mape.toFixed(2)}%</div>
+                            </div>
+                            <div class="info-item stat-item median-stat mb-2">
+                                <div class="info-label stat-label">相对误差均值</div>
+                                <div class="info-value stat-value">${(mae / (result.groundtruth.reduce((a, b) => a + b, 0) / result.groundtruth.length) * 100).toFixed(2)}%</div>
+                            </div>
+                            <div class="info-item stat-item std-stat">
+                                <div class="info-label stat-label">预测准确率</div>
+                                <div class="info-value stat-value">${(100 - mape).toFixed(2)}%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 数据范围 -->
+                    <div class="col-md-4">
+                        <div class="info-section-header mb-2">
+                            <i class="fas fa-chart-line me-2"></i>
+                            <h6 class="mb-0">数据范围</h6>
+                        </div>
+                        <div class="d-flex flex-column g-2">
+                            <div class="info-item stat-item q1-stat mb-2">
+                                <div class="info-label stat-label">预测值范围</div>
+                                <div class="info-value stat-value">${(Math.max(...result.prediction) - Math.min(...result.prediction)).toFixed(4)}</div>
+                            </div>
+                            <div class="info-item stat-item q2-stat mb-2">
+                                <div class="info-label stat-label">真实值范围</div>
+                                <div class="info-value stat-value">${(Math.max(...result.groundtruth) - Math.min(...result.groundtruth)).toFixed(4)}</div>
+                            </div>
+                            <div class="info-item stat-item q3-stat">
+                                <div class="info-label stat-label">预测偏差</div>
+                                <div class="info-value stat-value">${(result.prediction.reduce((a, b) => a + b, 0) / result.prediction.length - result.groundtruth.reduce((a, b) => a + b, 0) / result.groundtruth.length).toFixed(4)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 计算MSE
+        function calculateMSE(pred, actual) {
+            if (pred.length !== actual.length) return 0;
+            return pred.reduce((sum, p, i) => sum + Math.pow(p - actual[i], 2), 0) / pred.length;
+        }
+
+        // 计算MAE
+        function calculateMAE(pred, actual) {
+            if (pred.length !== actual.length) return 0;
+            return pred.reduce((sum, p, i) => sum + Math.abs(p - actual[i]), 0) / pred.length;
+        }
+
+        // 计算MAPE
+        function calculateMAPE(pred, actual) {
+            if (pred.length !== actual.length) return 0;
+            return pred.reduce((sum, p, i) => sum + Math.abs((p - actual[i]) / actual[i]), 0) / pred.length * 100;
+        }
+
+        // 更新步骤指示器
+        function updateStepIndicator(step) {
+            currentStep = step;
+            
+            // 重置所有步骤
+            for (let i = 1; i <= 4; i++) {
+                const stepElement = document.getElementById(`step${i}`);
+                stepElement.classList.remove('active', 'completed');
+            }
+            
+            // 设置当前步骤和已完成步骤
+            for (let i = 1; i <= step; i++) {
+                const stepElement = document.getElementById(`step${i}`);
+                if (i === step) {
+                    stepElement.classList.add('active');
+                } else {
+                    stepElement.classList.add('completed');
+                }
+            }
+        }
+
+        // 添加步骤导航功能
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.step')) {
+                const stepElement = e.target.closest('.step');
+                const stepNumber = parseInt(stepElement.id.replace('step', ''));
+                
+                // 检查是否可以跳转到该步骤
+                if (canNavigateToStep(stepNumber)) {
+                    navigateToStep(stepNumber);
+                }
+            }
+        });
+
+        // 检查是否可以导航到指定步骤
+        function canNavigateToStep(step) {
+            switch(step) {
+                case 1: return true;
+                case 2: return currentData !== null;
+                case 3: return currentData !== null;
+                case 4: return currentData !== null && document.getElementById('targetVariable').value;
+                default: return false;
+            }
+        }
+
+        // 导航到指定步骤
+        function navigateToStep(step) {
+            switch(step) {
+                case 1:
+                    document.getElementById('step1-content').style.display = 'block';
+                    document.getElementById('step2-content').style.display = 'none';
+                    document.getElementById('step3-content').style.display = 'none';
+                    document.getElementById('step4-content').style.display = 'none';
+                    updateStepIndicator(1);
+                    break;
+                case 2:
+                    showStep2();
+                    break;
+                case 3:
+                    showStep3();
+                    break;
+                case 4:
+                    showStep4();
+                    break;
+            }
+        }
+    </script>
+</body>
+</html>
