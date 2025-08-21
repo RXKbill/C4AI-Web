@@ -3757,50 +3757,47 @@
         <script>
             // 等待所有资源加载完成
             window.addEventListener('load', function() {
-                // 加载模态框组件
-                $('#modalsContainer').load('templates/components/business-modals.html', function() {
-                    // 模态框加载完成后初始化事件
-                    if (window.BusinessModals) {
-                        window.BusinessModals.initialize();
-                    }
+                // 直接初始化（不再从 templates 目录动态加载，避免404内容被注入）
+                if (window.BusinessModals) {
+                    window.BusinessModals.initialize();
+                }
 
-                    // 初始化业务处理器
-                    if (window.BusinessProcessor) {
-                        window.BusinessProcessor.init();
-            
-                        // 显示调度记录
-                        window.BusinessProcessor.recordProcessor.updateRecordDisplay('dispatch');
-                
-                        // 绑定标签页切换事件，显示对应类型的记录
-                        document.querySelectorAll('a[data-bs-toggle="tab"]').forEach(tab => {
-                            tab.addEventListener('shown.bs.tab', (e) => {
-                                const type = e.target.getAttribute('href').replace('#', '').split('-')[0];
-                                if (type && ['dispatch', 'trading', 'maintenance', 'charging'].includes(type)) {
-                                    window.BusinessProcessor.recordProcessor.updateRecordDisplay(type);
-                                    // 重新初始化模态框事件，因为内容已更新
-                                    if (window.BusinessModals) {
-                                        window.BusinessModals.initialize();
-                                    }
+                // 初始化业务处理器
+                if (window.BusinessProcessor) {
+                    window.BusinessProcessor.init();
+
+                    // 显示调度记录
+                    window.BusinessProcessor.recordProcessor.updateRecordDisplay('dispatch');
+
+                    // 绑定标签页切换事件，显示对应类型的记录
+                    document.querySelectorAll('a[data-bs-toggle="tab"]').forEach(tab => {
+                        tab.addEventListener('shown.bs.tab', (e) => {
+                            const type = e.target.getAttribute('href').replace('#', '').split('-')[0];
+                            if (type && ['dispatch', 'trading', 'maintenance', 'charging'].includes(type)) {
+                                window.BusinessProcessor.recordProcessor.updateRecordDisplay(type);
+                                // 内容更新后重新初始化模态框事件
+                                if (window.BusinessModals) {
+                                    window.BusinessModals.initialize();
                                 }
-                            });
+                            }
                         });
-                    }
+                    });
+                }
 
-                    // 初始化交易图表
-                    if (window.TradingCharts) {
-                        window.tradingCharts = new TradingCharts();
-                    }
+                // 初始化交易图表
+                if (window.TradingCharts) {
+                    window.tradingCharts = new TradingCharts();
+                }
 
-                    // 初始化设备检修管理
-                    if (window.MaintenanceManagement) {
-                        window.maintenanceManagement = new MaintenanceManagement();
-                    }
+                // 初始化设备检修管理
+                if (window.MaintenanceManagement) {
+                    window.maintenanceManagement = new MaintenanceManagement();
+                }
 
-                    // 初始化电力调度指令管理
-                    if (window.PowerDispatchCommands) {
-                        window.powerDispatchCommands = new PowerDispatchCommands();
-                    }
-                });
+                // 初始化电力调度指令管理
+                if (window.PowerDispatchCommands) {
+                    window.powerDispatchCommands = new PowerDispatchCommands();
+                }
             });
         </script>
 
@@ -4427,23 +4424,13 @@
         </script>
 
         <!-- 引入业务模态框 -->
-        <script>
-            $(document).ready(function() {
-                // 加载业务模态框
-                $.get('templates/components/business-modals.html', function(data) {
-                    $('body').append(data);
-                });
-            });
-        </script>
+        
 
         <!-- 引入业务相关的 JS 文件 -->
         <script src="static/js/maintenance-work-order.js"></script>
 
         <!-- 在 body 结束标签前添加 -->
-        <!-- 引入业务模态框 -->
-        <?php include 'templates/components/business-modals.html'; ?>
-
-        <!-- 业务相关的 JS 文件 -->
+        <!-- 引入业务相关的 JS 文件 -->
         <script src="static/js/maintenance-work-order.js"></script>
 
         <script>
@@ -4467,12 +4454,16 @@
 
         <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 加载模态框内容
+            // 尝试加载业务模态框（增加404内容检测，避免注入404页面）
             fetch('templates/components/business-modals.html')
                 .then(response => response.text())
                 .then(html => {
-                    document.getElementById('modalsContainer').innerHTML = html;
-                    
+                    if (!html) return;
+                    const looksLike404 = /<title>\s*404\b/i.test(html) || html.includes('Sorry, page not found');
+                    if (looksLike404) return;
+                    const container = document.getElementById('modalsContainer');
+                    if (container) container.innerHTML = html;
+
                     // 初始化工单管理
                     if (typeof MaintenanceWorkOrder !== 'undefined') {
                         window.maintenanceWorkOrder = new MaintenanceWorkOrder();

@@ -6,7 +6,7 @@ from transformers import PreTrainedModel, Cache, DynamicCache
 from transformers.activations import ACT2FN
 from transformers.modeling_attn_mask_utils import _prepare_4d_causal_attention_mask
 from transformers.modeling_outputs import MoeModelOutputWithPast, MoeCausalLMOutputWithPast
-from .configuration_sundial import SundialConfig
+from .configuration_predenergy import PredenergyConfig
 from .ts_generation_mixin import TSGenerationMixin
 from .flow_loss import FlowLoss
 
@@ -25,8 +25,8 @@ def apply_rotary_pos_emb(q, k, cos, sin, position_ids, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
-class SundialPatchEmbedding(nn.Module):
-    def __init__(self, config: SundialConfig):
+class PredenergyPatchEmbedding(nn.Module):
+    def __init__(self, config: PredenergyConfig):
         super().__init__()
         self.dropout = nn.Dropout(config.dropout_rate)
         self.hidden_layer = nn.Linear(
@@ -58,7 +58,7 @@ class SundialPatchEmbedding(nn.Module):
         return out
 
 
-class SundialRotaryEmbedding(torch.nn.Module):
+class PredenergyRotaryEmbedding(torch.nn.Module):
     def __init__(self, dim, max_position_embeddings=10000, base=10000, device=None):
         super().__init__()
         self.dim = dim
@@ -98,8 +98,8 @@ class SundialRotaryEmbedding(torch.nn.Module):
         )
 
 
-class SundialAttention(nn.Module):
-    def __init__(self, config: SundialConfig, layer_idx: Optional[int] = None):
+class PredenergyAttention(nn.Module):
+    def __init__(self, config: PredenergyConfig, layer_idx: Optional[int] = None):
         super().__init__()
         self.layer_idx = layer_idx
         self.hidden_size = config.hidden_size
@@ -110,7 +110,7 @@ class SundialAttention(nn.Module):
         self.k_proj = nn.Linear(self.hidden_size, self.hidden_size, bias=True)
         self.v_proj = nn.Linear(self.hidden_size, self.hidden_size, bias=True)
         self.o_proj = nn.Linear(self.hidden_size, self.hidden_size, bias=False)
-        self.rotary_emb = SundialRotaryEmbedding(
+        self.rotary_emb = PredenergyRotaryEmbedding(
             self.head_dim, max_position_embeddings=config.max_position_embeddings)
 
     def forward(
@@ -160,7 +160,7 @@ class SundialAttention(nn.Module):
         return attn_output, attn_weights, past_key_value
 
 
-class SundialMLP(nn.Module):
+class PredenergyMLP(nn.Module):
     def __init__(self, hidden_size: int, intermediate_size: int, hidden_act: str):
         super().__init__()
         self.hidden_size = hidden_size
@@ -177,12 +177,12 @@ class SundialMLP(nn.Module):
         return self.down_proj(self.act_fn(self.gate_proj(hidden_state)) * self.up_proj(hidden_state))
 
 
-class SundialDecoderLayer(nn.Module):
-    def __init__(self, config: SundialConfig, layer_idx: int):
+class PredenergyDecoderLayer(nn.Module):
+    def __init__(self, config: PredenergyConfig, layer_idx: int):
         super().__init__()
-        self.self_attn = SundialAttention(config, layer_idx)
+        self.self_attn = PredenergyAttention(config, layer_idx)
 
-        self.ffn_layer = SundialMLP(
+        self.ffn_layer = PredenergyMLP(
             hidden_size=config.hidden_size,
             intermediate_size=config.intermediate_size,
             hidden_act=config.hidden_act,
@@ -229,11 +229,11 @@ class SundialDecoderLayer(nn.Module):
         return hidden_states, self_attn_weights, present_key_value
 
 
-class SundialPreTrainedModel(PreTrainedModel):
-    config_class = SundialConfig
+class PredenergyPreTrainedModel(PreTrainedModel):
+    config_class = PredenergyConfig
     base_model_prefix = "model"
     supports_gradient_checkpointing = True
-    _no_split_modules = ["SundialDecoderLayer"]
+    _no_split_modules = ["PredenergyDecoderLayer"]
     _skip_keys_device_placement = "past_key_values"
     _supports_flash_attn_2 = True
     _supports_sdpa = False
@@ -251,12 +251,12 @@ class SundialPreTrainedModel(PreTrainedModel):
                 module.weight.data[module.padding_idx].zero_()
 
 
-class SundialModel(SundialPreTrainedModel):
-    def __init__(self, config: SundialConfig):
+class PredenergyModel(PredenergyPreTrainedModel):
+    def __init__(self, config: PredenergyConfig):
         super().__init__(config)
-        self.embed_layer = SundialPatchEmbedding(config)
+        self.embed_layer = PredenergyPatchEmbedding(config)
         self.layers = nn.ModuleList(
-            [SundialDecoderLayer(config, layer_idx)
+            [PredenergyDecoderLayer(config, layer_idx)
              for layer_idx in range(config.num_hidden_layers)]
         )
         self.norm = torch.nn.LayerNorm(config.hidden_size)
@@ -395,11 +395,11 @@ class SundialModel(SundialPreTrainedModel):
         )
 
 
-class SundialForPrediction(SundialPreTrainedModel, TSGenerationMixin):
-    def __init__(self, config: SundialConfig):
+class PredenergyForPrediction(PredenergyPreTrainedModel, TSGenerationMixin):
+    def __init__(self, config: PredenergyConfig):
         super().__init__(config)
         self.config = config
-        self.model = SundialModel(self.config)
+        self.model = PredenergyModel(self.config)
         self.flow_loss = FlowLoss(self.config.output_token_lens[-1], self.config.hidden_size,
                                   self.config.flow_loss_depth, self.config.hidden_size, self.config.num_sampling_steps)
         self.post_init()

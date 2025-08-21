@@ -37,6 +37,17 @@ def create_app(config_name='default'):
     def static_files(filename):
         return send_from_directory(app.static_folder, filename)
     
+    # 提供 templates 目录下的静态模板文件（供前端直接加载片段）
+    @app.route('/templates/<path:filename>')
+    def template_files(filename):
+        template_dir = os.path.join(project_root, 'templates')
+        file_path = os.path.join(template_dir, filename)
+        if os.path.exists(file_path):
+            return send_file(file_path)
+        else:
+            html_folder = os.path.join(project_root, 'html')
+            return send_file(os.path.join(html_folder, 'app-page_404.html'))
+    
     # 添加前端页面路由
     @app.route('/')
     def index():

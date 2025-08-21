@@ -2,8 +2,8 @@ from typing import List
 from transformers import PretrainedConfig
 
 
-class SundialConfig(PretrainedConfig):
-    model_type = "sundial"
+class PredenergyConfig(PretrainedConfig):
+    model_type = "predenergy"
     keys_to_ignore_at_inference = ["past_key_values"]
 
     def __init__(

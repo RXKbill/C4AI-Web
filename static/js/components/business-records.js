@@ -250,8 +250,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 加载总览页面内容
 function loadOverviewContent() {
-    $.get('templates/components/overview.html', function(data) {
-        $('#overview').html(data);
+    $.get('templates/components/overview.html', function(data, status, xhr) {
+        try {
+            if (xhr && xhr.status && xhr.status !== 200) return;
+            var is404 = /<title>\s*404\b/i.test(data) || (data && data.indexOf('Sorry, page not found') !== -1);
+            if (is404) return;
+            $('#overview').html(data);
         
         // 初始化业务趋势图表
         var businessTrendOptions = {
@@ -285,6 +289,9 @@ function loadOverviewContent() {
             }
         };
         new ApexCharts(document.querySelector("#task-distribution-chart"), taskDistributionOptions).render();
+        } catch (e) {
+            console.error('加载总览内容失败:', e);
+        }
     });
 }
 

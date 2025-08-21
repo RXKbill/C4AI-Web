@@ -11,12 +11,15 @@ import json
 model = None
 
 def load_model():
-    """加载Sundial模型"""
+    """加载Predenergy模型"""
     global model
     if model is None:
         try:
-            model = AutoModelForCausalLM.from_pretrained('thuml/sundial-base-128m', trust_remote_code=True)
-            print("Sundial模型加载成功")
+            # 从本地 Predenergy 目录加载自定义模型实现
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            local_model_path = os.path.join(project_root, 'Predenergy')
+            model = AutoModelForCausalLM.from_pretrained(local_model_path, trust_remote_code=True)
+            print("Predenergy 模型加载成功")
         except Exception as e:
             print(f"模型加载失败: {e}")
             model = None
@@ -136,7 +139,7 @@ def inference_predict():
         lookback_data = target_values[start_position:start_position + lookback_length]
         lookback_tensor = torch.tensor(lookback_data).unsqueeze(0).float()
         
-        # 执行预测 - 使用正确的Sundial pipeline
+        # 执行预测 - 使用正确的 Predenergy pipeline
         with torch.no_grad():
             forecast = model.generate(
                 lookback_tensor, 
@@ -197,7 +200,7 @@ def get_model_info():
             })
         
         info = {
-            'model_name': 'Sundial-Base-128M',
+            'model_name': 'Predenergy',
             'model_type': 'Causal Language Model',
             'parameters': '128M',
             'framework': 'Transformers',

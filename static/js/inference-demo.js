@@ -534,7 +534,7 @@ function displayPredictionStats(result) {
     `;
 
     modelDiv.innerHTML = `
-        <p><strong>模型：</strong>Sundial-Base-128M</p>
+        <p><strong>模型：</strong>Predenergy</p>
         <p><strong>预测方法：</strong>零样本生成</p>
         <p><strong>输入长度：</strong>${result.history.length}</p>
         <p><strong>生成样本数：</strong>20</p>
