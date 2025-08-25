@@ -2,7 +2,6 @@ import os
 from dotenv import load_dotenv
 from app import create_app, db
 from app.models import User, RolePermission
-from gevent import pywsgi
 
 # 加载环境变量
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -23,6 +22,4 @@ if __name__ == '__main__':
     for rule in app.url_map.iter_rules():
         print(f"  {rule.rule} -> {rule.endpoint}")
     print("\nServer will be available at: http://localhost:5000")
-    # app.run(host='0.0.0.0', port=5000, debug=True) 
-    server = pywsgi.WSGIServer(('0.0.0.0',3389),app)
-    server.serve_forever()
+    app.run(host='0.0.0.0', port=8080, debug=True)
